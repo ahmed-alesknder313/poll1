@@ -1,4 +1,4 @@
-$port = 8080
+﻿$port = 8080
 if ($PSScriptRoot) {
     $baseDir = $PSScriptRoot
 } else {
@@ -283,9 +283,10 @@ while ($listener.IsListening) {
                 if ($reqObj.username) { $uInput = $reqObj.username.ToString().Trim().ToLower() }
                 $pInput = ""
                 if ($reqObj.password) { $pInput = $reqObj.password.ToString().Trim() }
-                $arabicNums = @('٠','١','٢','٣','٤','٥','٦','٧','٨','٩')
+
                 for ($d = 0; $d -lt 10; $d++) {
-                    $pInput = $pInput.Replace($arabicNums[$d], [string]$d)
+                    $arChar = [string][char](0x0660 + $d)
+                    $pInput = $pInput.Replace($arChar, [string]$d)
                 }
 
                 foreach ($a in $adms) {
@@ -294,7 +295,7 @@ while ($listener.IsListening) {
                     $admP = ""
                     if ($a.password) { $admP = $a.password.ToString().Trim() }
 
-                    $uOk = ($admU -eq $uInput -or ($admU -eq "admin" -and ($uInput -in @("admin", "مشرف", "مدير", "المشرف"))))
+                    $uOk = ($admU -eq $uInput -or ($admU -eq "admin" -and ($uInput -in @("admin", "supervisor"))))
                     $pOk = ($admP -eq $pInput -or ($admU -eq "admin" -and ($pInput -in @("admin123", "admin"))))
                     if ($uOk -and $pOk) {
                         $found = $a
@@ -304,7 +305,7 @@ while ($listener.IsListening) {
                 if ($found) {
                     $userPayload = @{
                         status  = "success"
-                        message = "تم تسجيل الدخول بنجاح"
+                        message = "Login successful"
                         user    = @{
                             username = $found.username
                             fullName = $found.fullName
@@ -315,7 +316,7 @@ while ($listener.IsListening) {
                     $respStr = ConvertTo-Json -InputObject $userPayload -Compress
                     $response.StatusCode = 200
                 } else {
-                    $respStr = '{"status":"error","message":"بيانات الدخول غير صحيحة. يرجى التأكد من اسم المستخدم وكلمة المرور."}'
+                    $respStr = '{"status":"error","message":"Invalid credentials"}'
                     $response.StatusCode = 401
                 }
             } elseif ($actionQ -match "action=admin_create" -or $reqObj.action -eq "admin_create") {
